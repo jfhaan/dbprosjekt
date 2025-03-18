@@ -138,3 +138,45 @@ FROM rows, seats;
 INSERT INTO Noedutgangrad (Flytype, Seterad)
 VALUES ('Dash-8 100', 5);
 
+-- Brukstilfelle 2.3: Registrere fly --
+-- Norwegian --
+INSERT INTO Fly (Registreringsnummer, Serienummer, Navn, Driftsstart, Flytype, Flyproduset)
+VALUES ('LN-ENU', '42069', NULL, '2015-01-01', 'Boeing 737 800', 'The Boeing Company');
+
+INSERT INTO Fly (Registreringsnummer, Serienummer, Navn, Driftsstart, Flytype, Flyprodusent)
+VALUES ('LN-ENR', '42093', 'Jan Bålsrud', '2018-01-01', 'Boeing 737 800', 'The Boeing Company');
+
+INSERT INTO Fly (Registreringsnummer, Serienummer, Navn, Driftsstart, Flytype, Flyprodusent)
+VALUES ('LN-NIQ', '39403', 'Max Manus', '2011-01-01', 'Boeing 737 800', 'The Boeing Company');
+
+INSERT INTO Fly (Registreringsnummer, Serienummer, Navn, Driftsstart, Flytype, Flyprodusent)
+VALUES ('LN-ENS', '42281', NULL, '2017-01-01', 'Boeing 737 800', 'The Boeing Company');
+
+-- SAS --
+INSERT INTO Fly (Registreringsnummer, Serienummer, Navn, Driftsstart, Flytype, Flyprodusent)
+VALUES ('SE-RUB', '9518', 'Birger Viking', '2020-01-01', 'Airbus a320neo', 'Airbus Group');
+
+INSERT INTO Fly (Registreringsnummer, Serienummer, Navn, Driftsstart, Flytype, Flyprodusent)
+VALUES ('SE-DIR', '11421', 'Nora Viking', '2023-01-01', 'Airbus a320neo', 'Airbus Group');
+
+INSERT INTO Fly (Registreringsnummer, Serienummer, Navn, Driftsstart, Flytype, Flyprodusent)
+VALUES ('SE-RUP', '12066', 'Ragnhild Viking', '2024-01-01', 'Airbus a320neo', 'Airbus Group');
+
+INSERT INTO Fly (Registreringsnummer, Serienummer, Navn, Driftsstart, Flytype, Flyprodusent)
+VALUES ('SE-RZE', '12166', 'Ebbe Viking', '2024-01-01', 'Airbus a320neo', 'Airbus Group');
+
+-- Widerøe --
+INSERT INTO Fly (Registreringsnummer, Serienummer, Navn, Driftsstart, Flytype, Flyprodusent)
+VALUES ('LN-WIH', '383', 'Oslo', '1994-01-01', 'Dash-8 100', 'De Havilland Canada');
+
+INSERT INTO Fly (Registreringsnummer, Serienummer, Navn, Driftsstart, Flytype, Flyprodusent)
+VALUES ('LN-WIA', '359', 'Nordland', '1993-01-01', 'Dash-8 100', 'De Havilland Canada');
+
+INSERT INTO Fly (Registreringsnummer, Serienummer, Navn, Driftsstart, Flytype, Flyprodusent)
+VALUES ('LN-WIL', '298', 'Narvik', '1995-01-01', 'Dash-8 100', 'De Havilland Canada');
+
+
+
+
+
+

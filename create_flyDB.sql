@@ -131,7 +131,7 @@ CREATE TABLE Bestilling (
     Referansenummer VARCHAR(50) PRIMARY KEY,
     Totalpris DECIMAL(10, 2) NOT NULL,
     Kundenummer INTEGER NOT NULL,
-    FOREIGN KEY (Kundenummer) REFERENCES Kunde (Kundenummer),
+    FOREIGN KEY (Kundenummer) REFERENCES Kunde (Kundenummer)
 );
 
 -- Oppretter Bagasje-tabellen

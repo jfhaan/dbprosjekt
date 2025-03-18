@@ -97,7 +97,7 @@ CREATE TABLE Strekningspris (
 
 -- Oppretter Flyvning-tabellen
 CREATE TABLE Flyvning (
-    Loepenummer INTEGER PRIMARY KEY,
+    Loepenummer VARCHAR(30),
     RuteStrekningId INTEGER NOT NULL,
     FlyvningStatus VARCHAR(50) CHECK (
         FlyvningStatus IN ('planned', 'active', 'completed', 'cancelled')
@@ -105,6 +105,7 @@ CREATE TABLE Flyvning (
     FaktiskAvgang TIMESTAMP,
     FaktiskAnkomst TIMESTAMP,
     Fly VARCHAR(20) NOT NULL,
+    PRIMARY KEY (Loepenummer, RuteStrekningId),
     FOREIGN KEY (RuteStrekningId) REFERENCES RuteStrekning (Id),
     FOREIGN KEY (Fly) REFERENCES Fly (Registreringsnummer)
 );

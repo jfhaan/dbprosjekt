@@ -23,3 +23,28 @@ VALUES ('SK', 'SAS');
 
 INSERT INTO  Flyselskap (Kode, Navn)
 VALUES ('WF', 'Widerøe');
+
+-- Brukstilfelle 2.2: Registrere flytype --
+
+-- Registrere data for flyprodusent --
+INSERT INTO Flyprodusent (Navn, Stiftelsesaar)
+VALUES ('The Boeing Company', 1916);
+INSERT INTO FlyprodusentNasjonalitet(Nasjonalitet, Flyprodusent)
+VALUES ('USA', 'The Boeing Company');
+
+INSERT INTO Flyprodusent (Navn, Stiftelsesaar)
+VALUES ('Airbus Group', 1970);
+INSERT INTO FlyprodusentNasjonalitet(Nasjonalitet, Flyprodusent)
+VALUES ('Frankrike', 'Airbus Group');
+INSERT INTO FlyprodusentNasjonalitet(Nasjonalitet, Flyprodusent)
+VALUES ('Tyskland', 'Airbus Group');
+INSERT INTO FlyprodusentNasjonalitet(Nasjonalitet, Flyprodusent)
+VALUES ('Spania', 'Airbus Group');
+INSERT INTO FlyprodusentNasjonalitet(Nasjonalitet, Flyprodusent)
+VALUES ('Storbritannia', 'Airbus Group');
+
+INSERT INTO Flyprodusent (Navn, Stiftelsesaar)
+VALUES ('De Havilland Canada', 1928);
+INSERT INTO FlyprodusentNasjonalitet(Nasjonalitet, Flyprodusent)
+VALUES ('Canada', 'De Havilland Canada');
+

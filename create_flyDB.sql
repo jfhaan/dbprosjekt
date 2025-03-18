@@ -1,8 +1,14 @@
 -- Oppretter Flyprodusent-tabellen først siden andre tabeller refererer til den
 CREATE TABLE Flyprodusent (
     Navn VARCHAR(100) PRIMARY KEY,
-    Nasjonalitet VARCHAR(100) NOT NULL,
     Stiftelsesaar INTEGER NOT NULL
+);
+
+-- Oppretter FlyprodusentNasjonalitet-tabellen
+CREATE TABLE FlyprodusentNasjonalitet (
+    Nasjonalitet VARCHAR(100) PRIMARY KEY,
+    Flyprodusent VARCHAR(100) NOT NULL,
+    FOREIGN KEY (Flyprodusent) REFERENCES Flyprodusent (Navn)
 );
 
 -- Oppretter Flytype-tabellen som refererer til Flyprodusent

@@ -77,8 +77,8 @@ CREATE TABLE Flyrute (
 CREATE TABLE RuteStrekning (
     Id INTEGER PRIMARY KEY,
     Flyrutenummer VARCHAR(20) NOT NULL,
-    PlanlagtAvgang TIMESTAMP NOT NULL,
-    PlanlagtAnkomst TIMESTAMP NOT NULL,
+    PlanlagtAvgang TIME NOT NULL,
+    PlanlagtAnkomst TIME NOT NULL,
     Startflyplass VARCHAR(10) NOT NULL,
     Sluttflyplass VARCHAR(10) NOT NULL,
     FOREIGN KEY (Flyrutenummer) REFERENCES Flyrute (Flyrutenummer),

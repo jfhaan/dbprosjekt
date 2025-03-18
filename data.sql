@@ -48,3 +48,13 @@ VALUES ('De Havilland Canada', 1928);
 INSERT INTO FlyprodusentNasjonalitet(Nasjonalitet, Flyprodusent)
 VALUES ('Canada', 'De Havilland Canada');
 
+-- Registrere data for flytype --
+INSERT INTO Flytype (Navn, Flyprodusent, Produksjonsstart, Produksjonsslutt)
+VALUES ('Boeing 737 800', 'The Boeing Company', '1997-01-01', '2020-01-01');
+
+INSERT INTO Flytype (Navn, Flyprodusent, Produksjonsstart, Produksjonsslutt)
+VALUES ('Airbus a320neo', 'Airbus Group', '2016-01-01', NULL);
+
+INSERT INTO Flytype (Navn, Flyprodusent, Produksjonsstart, Produksjonsslutt)
+VALUES ('Dash-8 100', 'De Havilland Canada', '1984-01-01', '2005-01-01');
+

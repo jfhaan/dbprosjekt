@@ -1,4 +1,4 @@
--- Brukstilfelle 1: Registrere flyplass --
+-- Oppgave 1: Registrere flyplass --
 INSERT INTO Flyplass (Kode, Navn)
 VALUES ('BOO', 'Bodø Lufthavn');
 
@@ -14,7 +14,7 @@ VALUES ('SVG', 'Stavanger Lufthavn, Sola');
 INSERT INTO Flyplass (Kode, Navn)
 VALUES ('TRD', 'Trondheim Lufthavn, Værnes');
 
--- Brukstilfelle 2.1: Registrere flyselskap --
+-- Oppgave 2.1: Registrere flyselskap --
 INSERT INTO Flyselskap (Kode, Navn)
 VALUES ('DY', 'Norwegian');
 
@@ -24,7 +24,7 @@ VALUES ('SK', 'SAS');
 INSERT INTO  Flyselskap (Kode, Navn)
 VALUES ('WF', 'Widerøe');
 
--- Brukstilfelle 2.2: Registrere flytype --
+-- Oppgave 2.2: Registrere flytype --
 
 -- Registrere data for flyprodusent --
 INSERT INTO Flyprodusent (Navn, Stiftelsesaar)
@@ -116,7 +116,7 @@ INSERT INTO Sete (Rad, Plass, Flytype)
 VALUES (1, 'C', 'Dash-8 100'),
        (1, 'D', 'Dash-8 100');
 
--- Oppretter rad 2 -10 --
+-- Oppretter rad 2 - 10 --
 -- Bruker rekursiv CTE for å generere seterader og seter
 WITH RECURSIVE 
   rows(r) AS (
@@ -138,7 +138,7 @@ FROM rows, seats;
 INSERT INTO Noedutgangrad (Flytype, Seterad)
 VALUES ('Dash-8 100', 5);
 
--- Brukstilfelle 2.3: Registrere fly --
+-- Oppgave 2.3: Registrere fly --
 -- Norwegian --
 INSERT INTO Fly (Registreringsnummer, Serienummer, Navn, Driftsstart, Flytype, Flyprodusent)
 VALUES ('LN-ENU', '42069', NULL, '2015-01-01', 'Boeing 737 800', 'The Boeing Company');
@@ -175,7 +175,7 @@ VALUES ('LN-WIA', '359', 'Nordland', '1993-01-01', 'Dash-8 100', 'De Havilland C
 INSERT INTO Fly (Registreringsnummer, Serienummer, Navn, Driftsstart, Flytype, Flyprodusent)
 VALUES ('LN-WIL', '298', 'Narvik', '1995-01-01', 'Dash-8 100', 'De Havilland Canada');
 
--- Brukstilfelle 3 --
+-- Oppgave 3 --
 -- Første flyrute --
 INSERT INTO Flyrute (Flyrutenummer, Ukedagskode, Flyselskap, Flytype)
 VALUES ('WF1311', '12345', 'WF', 'Dash-8 100');

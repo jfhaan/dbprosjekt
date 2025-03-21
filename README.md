@@ -24,7 +24,7 @@ python3 oppgave5.py
 python3 oppgave6.py
 ```
 
-## Oppgave 7
+### Oppgave 7
 
 For å sjekke det har blitt lagt til bestillinger kan man kjøre følgende i terminalen
 

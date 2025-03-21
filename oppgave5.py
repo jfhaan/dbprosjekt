@@ -19,6 +19,7 @@ def main():
     execute(c, "oppgave5.sql")
     res = c.fetchall()
     print()
+    print("Selskapskode | Selskapsnavn | Type | Antall")
     for tup in res:
         print(" | ".join(map(str, tup)))
 

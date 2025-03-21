@@ -100,5 +100,5 @@ VALUES ('WF1302-20250401-010',
 INSERT INTO Billett (id, Referansenummer, Kategori, Pris, Innsjekkingstid, Sete, Flyvning)
 VALUES (10, 'WF1302-20250401-010', 'økonomi', 
       (SELECT Pris FROM Strekningspris WHERE RuteStrekningId = 2 AND Kategori = 'økonomi'),
-      '2025-04-01 06:30:00', '3D', 'WF1302 01APR2025'); 
+      '2025-04-01 06:30:00', '4A', 'WF1302 01APR2025'); 
 

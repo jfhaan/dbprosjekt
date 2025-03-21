@@ -7,7 +7,7 @@ I denne repoen vil du finne våre løsninger til prosjektet i emnet TDT4145.
 For å opprette en database `fly.db`, lage tables og å fylle den med data fra oppgave 1-4 og 7 kjør:
 
 ```python3
-python3 create.db
+python3 init.py
 ```
 
 ## Oppgaver
@@ -15,7 +15,7 @@ python3 create.db
 ### Oppgave 5
 
 ```python3
-python3 oppgave5.sql
+python3 oppgave5.py
 ```
 
 ### Oppgave 6

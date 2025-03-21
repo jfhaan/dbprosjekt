@@ -34,8 +34,10 @@ def get_flight_routes_with_segments(conn, ukedag, start_flyplass, slutt_flyplass
                            1 as Antall_Stopp
                        FROM RuteStrekning rs
                        JOIN Flyrute f ON rs.Flyrutenummer = f.Flyrutenummer
+                       JOIN Flyvning fly ON rs.Id = fly.RuteStrekningId
                        WHERE rs.Startflyplass = ?
                        AND f.Ukedagskode LIKE ?
+                       AND fly.FlyvningStatus = 'planned'
                        
                        UNION ALL
                        
@@ -52,8 +54,10 @@ def get_flight_routes_with_segments(conn, ukedag, start_flyplass, slutt_flyplass
                        FROM RuteStrekning rs
                        JOIN MuligeRuter m ON rs.Startflyplass = substr(m.Reiserute, -3)
                            AND rs.Flyrutenummer = m.Flyrutenummer
+                       JOIN Flyvning fly ON rs.Id = fly.RuteStrekningId
                        WHERE rs.PlanlagtAvgang > m.PlanlagtAnkomst
                        AND m.Antall_Stopp < 3
+                       AND fly.FlyvningStatus = 'planned'
                    )
                    SELECT * FROM MuligeRuter 
                    WHERE Sluttflyplass = ?
@@ -67,12 +71,14 @@ def get_flight_routes_with_segments(conn, ukedag, start_flyplass, slutt_flyplass
         
         # Hent alle delstrekninger for denne ruten
         cursor.execute("""
-                       SELECT *
-                       FROM RuteStrekning
-                       WHERE Flyrutenummer = ?
-                       AND Startflyplass >= ?
-                       AND Sluttflyplass <= ?
-                       ORDER BY PlanlagtAvgang
+                       SELECT rs.*
+                       FROM RuteStrekning rs
+                       JOIN Flyvning fly ON rs.Id = fly.RuteStrekningId
+                       WHERE rs.Flyrutenummer = ?
+                       AND rs.Startflyplass >= ?
+                       AND rs.Sluttflyplass <= ?
+                       AND fly.FlyvningStatus = 'planned'
+                       ORDER BY rs.PlanlagtAvgang
                        """, (flyrutenummer, start_flyplass, slutt_flyplass))
         
         delstrekninger = cursor.fetchall()
@@ -102,6 +108,51 @@ def get_flight_routes_with_segments(conn, ukedag, start_flyplass, slutt_flyplass
     
     return result
 
+def get_available_seats(conn, rute_strekning_id, dato):
+    cursor = conn.cursor()
+    
+    # Hent flytype for ruten
+    cursor.execute("""
+                   SELECT f.Flytype
+                   FROM Flyrute f
+                   JOIN RuteStrekning rs ON f.Flyrutenummer = rs.Flyrutenummer
+                   WHERE rs.Id = ?
+                   """, (rute_strekning_id,))
+    flytype = cursor.fetchone()[0]
+    
+    # Hent alle seter for flytypen
+    cursor.execute("""
+                   SELECT s.Rad, s.Plass
+                   FROM Sete s
+                   WHERE s.Flytype = ?
+                   ORDER BY s.Rad, s.Plass
+                   """, (flytype,))
+    alle_seter = cursor.fetchall()
+    
+    # Hent alle opptatte seter for denne flyvningen på den valgte datoen
+    cursor.execute("""
+                   SELECT b.Sete
+                   FROM Billett b
+                   JOIN Flyvning f ON b.Flyvning = f.Loepenummer
+                   WHERE f.RuteStrekningId = ?
+                   AND f.FaktiskAvgang LIKE ?
+                   """, (rute_strekning_id, f"{dato}%"))
+    opptatte_seter = [b[0] for b in cursor.fetchall()]
+    
+    # Finn ledige seter
+    ledige_seter = []
+    for rad, plass in alle_seter:
+        sete = f"{rad}{plass}"  # Lag sete-strengen
+        if sete not in opptatte_seter:
+            try:
+                rad_num = int(rad)
+                ledige_seter.append((rad_num, plass))
+            except ValueError:
+                continue  # Hopp over hvis rad ikke er et tall
+    
+    return sorted(ledige_seter)
+
+
 def main():
     conn = connect_to_db()
     print("\n ==== Velkommen til flyvningsvelgeren ===")
@@ -112,6 +163,8 @@ def main():
             dato = input("\nSkriv inn dato (DD.MM.ÅÅÅÅ): ")
             dato_obj = datetime.strptime(dato, "%d.%m.%Y")
             ukedagskode = str((dato_obj.weekday() + 1) % 7)  # Konverterer til 0-6 hvor 0 er søndag
+            # Konverter dato til format som brukes i databasen (YYYY-MM-DD)
+            db_dato = dato_obj.strftime("%Y-%m-%d")
             break
         except ValueError:
             print("Ugyldig datoformat. Vennligst bruk formatet DD.MM.ÅÅÅÅ")
@@ -150,6 +203,26 @@ def main():
                     print(f"  {segment[4]} -> {segment[5]}")
                     print(f"    Avgang: {segment[2]}, Ankomst: {segment[3]}")
                 print(f"  Mellomlanding i: {', '.join(rute['mellomlandinger'])}")
+            
+            # Vis ledige seter for hver delstrekning
+            print("\nLedige seter for hver delstrekning:")
+            for segment in rute['segmenter']:
+                print(f"\nStrekning: {segment[4]} -> {segment[5]}")
+                ledige_seter = get_available_seats(conn, segment[0], db_dato)
+                if ledige_seter:
+                    print("Ledige seter:")
+                    # Grupper seter etter rad
+                    rader = {}
+                    for rad, plass in ledige_seter:
+                        if rad not in rader:
+                            rader[rad] = []
+                        rader[rad].append(plass)
+                    # Skriv ut hver rad på en egen linje
+                    for rad in sorted(rader.keys()):
+                        print(f"  Rad {rad}: {', '.join(sorted(rader[rad]))}")
+                else:
+                    print("Ingen ledige seter på denne strekningen")
+            print("\n" + "="*50)  # Legg til en skillelinje mellom rutene
     else:
         print(f"\nIngen flyruter funnet mellom {start_flyplass} og {slutt_flyplass} på den valgte datoen.")
 

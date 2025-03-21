@@ -162,7 +162,7 @@ def main():
         try:
             dato = input("\nSkriv inn dato (DD.MM.ÅÅÅÅ): ")
             dato_obj = datetime.strptime(dato, "%d.%m.%Y")
-            ukedagskode = str((dato_obj.weekday() + 1) % 7)  # Konverterer til 0-6 hvor 0 er søndag
+            ukedagskode = str(dato_obj.weekday() + 1)  # Konverterer til 1-7 hvor 1 er mandag
             # Konverter dato til format som brukes i databasen (YYYY-MM-DD)
             db_dato = dato_obj.strftime("%Y-%m-%d")
             break

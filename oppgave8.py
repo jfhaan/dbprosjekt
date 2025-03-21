@@ -23,7 +23,7 @@ def get_flight_routes_with_segments(conn, ukedag, start_flyplass, slutt_flyplass
                    WITH RECURSIVE
                    MuligeRuter AS (
                        -- Direkte ruter
-                       SELECT 
+                       SELECT DISTINCT
                            rs.Id,
                            rs.Flyrutenummer,
                            rs.PlanlagtAvgang,
@@ -31,7 +31,8 @@ def get_flight_routes_with_segments(conn, ukedag, start_flyplass, slutt_flyplass
                            rs.Startflyplass,
                            rs.Sluttflyplass,
                            rs.Startflyplass || ',' || rs.Sluttflyplass as Reiserute,
-                           1 as Antall_Stopp
+                           1 as Antall_Stopp,
+                           0 as Er_Delstrekning
                        FROM RuteStrekning rs
                        JOIN Flyrute f ON rs.Flyrutenummer = f.Flyrutenummer
                        JOIN Flyvning fly ON rs.Id = fly.RuteStrekningId
@@ -42,7 +43,7 @@ def get_flight_routes_with_segments(conn, ukedag, start_flyplass, slutt_flyplass
                        UNION ALL
                        
                        -- Legg til neste delstrekning
-                       SELECT 
+                       SELECT DISTINCT
                            rs.Id,
                            rs.Flyrutenummer,
                            m.PlanlagtAvgang,
@@ -50,7 +51,8 @@ def get_flight_routes_with_segments(conn, ukedag, start_flyplass, slutt_flyplass
                            m.Startflyplass,
                            rs.Sluttflyplass,
                            m.Reiserute || ',' || rs.Sluttflyplass,
-                           m.Antall_Stopp + 1
+                           m.Antall_Stopp + 1,
+                           1 as Er_Delstrekning
                        FROM RuteStrekning rs
                        JOIN MuligeRuter m ON rs.Startflyplass = substr(m.Reiserute, -3)
                            AND rs.Flyrutenummer = m.Flyrutenummer
@@ -59,10 +61,18 @@ def get_flight_routes_with_segments(conn, ukedag, start_flyplass, slutt_flyplass
                        AND m.Antall_Stopp < 3
                        AND fly.FlyvningStatus = 'planned'
                    )
-                   SELECT * FROM MuligeRuter 
-                   WHERE Sluttflyplass = ?
-                   ORDER BY Antall_Stopp, PlanlagtAvgang
-                   """, (start_flyplass, f"%{ukedag}%", slutt_flyplass))
+                   SELECT DISTINCT m.*
+                   FROM MuligeRuter m
+                   LEFT JOIN (
+                       SELECT Flyrutenummer, MAX(Antall_Stopp) as max_stopp
+                       FROM MuligeRuter
+                       WHERE Sluttflyplass = ?
+                       GROUP BY Flyrutenummer
+                   ) ms ON m.Flyrutenummer = ms.Flyrutenummer
+                   WHERE m.Sluttflyplass = ?
+                   AND m.Antall_Stopp = ms.max_stopp
+                   ORDER BY m.Antall_Stopp, m.PlanlagtAvgang
+                   """, (start_flyplass, f"%{ukedag}%", slutt_flyplass, slutt_flyplass))
     
     mulige_ruter = cursor.fetchall()
     
@@ -71,15 +81,23 @@ def get_flight_routes_with_segments(conn, ukedag, start_flyplass, slutt_flyplass
         
         # Hent alle delstrekninger for denne ruten
         cursor.execute("""
-                       SELECT rs.*
+                       SELECT DISTINCT rs.*
                        FROM RuteStrekning rs
                        JOIN Flyvning fly ON rs.Id = fly.RuteStrekningId
                        WHERE rs.Flyrutenummer = ?
-                       AND rs.Startflyplass >= ?
-                       AND rs.Sluttflyplass <= ?
+                       AND ((rs.Startflyplass = ? AND rs.Sluttflyplass IN (
+                           SELECT DISTINCT Startflyplass 
+                           FROM RuteStrekning 
+                           WHERE Flyrutenummer = ? AND Sluttflyplass = ?
+                       )) OR (rs.Startflyplass IN (
+                           SELECT DISTINCT Sluttflyplass 
+                           FROM RuteStrekning 
+                           WHERE Flyrutenummer = ? AND Startflyplass = ?
+                       ) AND rs.Sluttflyplass = ?))
                        AND fly.FlyvningStatus = 'planned'
                        ORDER BY rs.PlanlagtAvgang
-                       """, (flyrutenummer, start_flyplass, slutt_flyplass))
+                       """, (flyrutenummer, start_flyplass, flyrutenummer, slutt_flyplass,
+                            flyrutenummer, start_flyplass, slutt_flyplass))
         
         delstrekninger = cursor.fetchall()
         
@@ -88,7 +106,7 @@ def get_flight_routes_with_segments(conn, ukedag, start_flyplass, slutt_flyplass
             route_info = {
                 'rutenummer': flyrutenummer,
                 'hovedrute': delstrekninger[-1],  # Siste delstrekning inneholder total reisetid
-                'er_delstrekning': False,
+                'er_delstrekning': True,
                 'segmenter': delstrekninger,
                 'antall_segmenter': len(delstrekninger),
                 'mellomlandinger': [d[5] for d in delstrekninger[:-1]]  # Alle mellomlandinger

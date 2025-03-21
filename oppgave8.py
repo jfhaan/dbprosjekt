@@ -16,91 +16,89 @@ def get_airports(conn):
 
 def get_flight_routes_with_segments(conn, ukedag, start_flyplass, slutt_flyplass):
     cursor = conn.cursor()
-    
-    # Først finn direkte ruter mellom start og slutt
-    cursor.execute("""
-                   SELECT *
-                   FROM RuteStrekning
-                   WHERE Startflyplass = ? AND Sluttflyplass = ?
-                   """, (start_flyplass, slutt_flyplass))
-    
-    direkte_ruter = cursor.fetchall()
-    
-    # Finn potensielle delstrekninger som kan kobles sammen
-    cursor.execute("""
-                   WITH Delstrekninger AS (
-                       SELECT r1.*, r2.*
-                       FROM RuteStrekning r1
-                       JOIN RuteStrekning r2 ON r1.Sluttflyplass = r2.Startflyplass 
-                           AND r1.Flyrutenummer = r2.Flyrutenummer
-                       WHERE r1.Startflyplass = ? 
-                           AND r2.Sluttflyplass = ?
-                           AND r2.PlanlagtAvgang > r1.PlanlagtAnkomst
-                   )
-                   SELECT * FROM Delstrekninger
-                   """, (start_flyplass, slutt_flyplass))
-    
-    sammensatte_ruter = cursor.fetchall()
-    
     result = []
     
-    # Håndter direkte ruter
-    for rute in direkte_ruter:
-        # Sjekk om ruten er på den valgte ukedagen
-        cursor.execute("""
-                      SELECT COUNT(*)
-                      FROM Flyrute
-                      WHERE Flyrutenummer = ? AND Ukedagskode LIKE ?
-                      """, (rute[1], f"%{ukedag}%"))
-        
-        er_på_ukedag = cursor.fetchone()[0] > 0
-
-        if er_på_ukedag:
-            cursor.execute("""
-                        SELECT COUNT(*)
-                        FROM RuteStrekning
-                        WHERE Flyrutenummer = ?
-                            AND ((Startflyplass = ? AND Sluttflyplass != ?)
-                            OR (Startflyplass != ? AND Sluttflyplass = ?))
-                        """, (rute[1], rute[4], rute[5], rute[4], rute[5]))
-            
-            er_del_av_sammensatt = cursor.fetchone()[0] > 0
-            
-            if not er_del_av_sammensatt:
-                route_info = {
-                    'rutenummer': rute[1],
-                    'segmenter': [rute],
-                    'antall_segmenter': 1,
-                    'mellomlandinger': []
-                }
-                result.append(route_info)
-
-            # Sjekk om denne ruten egentlig er en del av en sammensatt rute
-
+    # Først finn alle mulige ruter (både direkte og med mellomlandinger)
+    cursor.execute("""
+                   WITH RECURSIVE
+                   MuligeRuter AS (
+                       -- Direkte ruter
+                       SELECT 
+                           rs.Id,
+                           rs.Flyrutenummer,
+                           rs.PlanlagtAvgang,
+                           rs.PlanlagtAnkomst,
+                           rs.Startflyplass,
+                           rs.Sluttflyplass,
+                           rs.Startflyplass || ',' || rs.Sluttflyplass as Reiserute,
+                           1 as Antall_Stopp
+                       FROM RuteStrekning rs
+                       JOIN Flyrute f ON rs.Flyrutenummer = f.Flyrutenummer
+                       WHERE rs.Startflyplass = ?
+                       AND f.Ukedagskode LIKE ?
+                       
+                       UNION ALL
+                       
+                       -- Legg til neste delstrekning
+                       SELECT 
+                           rs.Id,
+                           rs.Flyrutenummer,
+                           m.PlanlagtAvgang,
+                           rs.PlanlagtAnkomst,
+                           m.Startflyplass,
+                           rs.Sluttflyplass,
+                           m.Reiserute || ',' || rs.Sluttflyplass,
+                           m.Antall_Stopp + 1
+                       FROM RuteStrekning rs
+                       JOIN MuligeRuter m ON rs.Startflyplass = substr(m.Reiserute, -3)
+                           AND rs.Flyrutenummer = m.Flyrutenummer
+                       WHERE rs.PlanlagtAvgang > m.PlanlagtAnkomst
+                       AND m.Antall_Stopp < 3
+                   )
+                   SELECT * FROM MuligeRuter 
+                   WHERE Sluttflyplass = ?
+                   ORDER BY Antall_Stopp, PlanlagtAvgang
+                   """, (start_flyplass, f"%{ukedag}%", slutt_flyplass))
     
-    # Håndter sammensatte ruter
-    for rute in sammensatte_ruter:
-        # Sjekk om ruten er på den valgte ukedagen
-        cursor.execute("""
-                      SELECT COUNT(*)
-                      FROM Flyrute
-                      WHERE Flyrutenummer = ? AND Ukedagskode LIKE ?
-                      """, (rute[1], f"%{ukedag}%"))
+    mulige_ruter = cursor.fetchall()
+    
+    for rute in mulige_ruter:
+        flyrutenummer = rute[1]
         
-        er_på_ukedag = cursor.fetchone()[0] > 0
-
-        if er_på_ukedag:
-            # Del opp i to segmenter (første og andre del av ruten)
-            første_segment = rute[0:6]
-            andre_segment = rute[6:]
-            
+        # Hent alle delstrekninger for denne ruten
+        cursor.execute("""
+                       SELECT *
+                       FROM RuteStrekning
+                       WHERE Flyrutenummer = ?
+                       AND Startflyplass >= ?
+                       AND Sluttflyplass <= ?
+                       ORDER BY PlanlagtAvgang
+                       """, (flyrutenummer, start_flyplass, slutt_flyplass))
+        
+        delstrekninger = cursor.fetchall()
+        
+        if len(delstrekninger) > 1:
+            # Ruten kan dekomponeres i delstrekninger
             route_info = {
-                'rutenummer': første_segment[1],  # Bruker rutenummeret fra første segment
-                'segmenter': [første_segment, andre_segment],
-                'antall_segmenter': 2,
-                'mellomlandinger': [første_segment[5]]  # Mellomlandingsflyplass er sluttflyplassen til første segment
+                'rutenummer': flyrutenummer,
+                'hovedrute': delstrekninger[-1],  # Siste delstrekning inneholder total reisetid
+                'er_delstrekning': False,
+                'segmenter': delstrekninger,
+                'antall_segmenter': len(delstrekninger),
+                'mellomlandinger': [d[5] for d in delstrekninger[:-1]]  # Alle mellomlandinger
             }
-            result.append(route_info)
+        else:
+            # Dette er en direkterute
+            route_info = {
+                'rutenummer': flyrutenummer,
+                'hovedrute': delstrekninger[0],
+                'er_delstrekning': False,
+                'segmenter': delstrekninger,
+                'antall_segmenter': 1,
+                'mellomlandinger': []
+            }
+        
+        result.append(route_info)
     
     return result
 
@@ -113,21 +111,20 @@ def main():
         try:
             dato = input("\nSkriv inn dato (DD.MM.ÅÅÅÅ): ")
             dato_obj = datetime.strptime(dato, "%d.%m.%Y")
-            ukedagskode = str((dato_obj.weekday() + 1))
+            ukedagskode = str((dato_obj.weekday() + 1) % 7)  # Konverterer til 0-6 hvor 0 er søndag
             break
         except ValueError:
             print("Ugyldig datoformat. Vennligst bruk formatet DD.MM.ÅÅÅÅ")
-    
-    print(f"\nUkedagskode: {ukedagskode}")
 
     # Henter flyplasser fra databasen
     flyplasser = get_airports(conn) 
     flyplasser_valg = [f"{kode} - {navn}" for kode, navn in flyplasser]
 
+    print("\nTilgjengelige flyplasser:")
     for i, valg in enumerate(flyplasser_valg, 1):
         print(f"{i}. {valg}")
     
-    valg = int(input("Skriv inn nummeret for den flyplassen du vil reise fra: "))
+    valg = int(input("\nSkriv inn nummeret for den flyplassen du vil reise fra: "))
     start_flyplass = flyplasser[valg - 1][0]
     
     valg = int(input("Skriv inn nummeret for den flyplassen du vil reise til: "))
@@ -138,27 +135,25 @@ def main():
 
     # Skriver ut flyruter
     if flyruter:
-        print(f"\nFlyruter mellom {start_flyplass} og {slutt_flyplass}")
+        print(f"\nFlyruter mellom {start_flyplass} og {slutt_flyplass} på valgt dato:")
         for rute in flyruter:
             print(f"\nFlyrutenummer: {rute['rutenummer']}")
-        
+            if rute['er_delstrekning']:
+                print("Dette er en delstrekning av en lengre rute:")
+            print(f"Strekning: {rute['hovedrute'][4]} -> {rute['hovedrute'][5]}")
+            print(f"  Planlagt avgang: {rute['hovedrute'][2]}")
+            print(f"  Planlagt ankomst: {rute['hovedrute'][3]}")
+            
             if rute['antall_segmenter'] > 1:
-                print("Denne reisen består av følgende delstrekninger:")
+                print("\nDenne reisen består av følgende delstrekninger:")
                 for segment in rute['segmenter']:
                     print(f"  {segment[4]} -> {segment[5]}")
                     print(f"    Avgang: {segment[2]}, Ankomst: {segment[3]}")
                 print(f"  Mellomlanding i: {', '.join(rute['mellomlandinger'])}")
-            else:
-                print("Dette er en direkterute:")
-                segment = rute['segmenter'][0]
-                print(f"  {segment[4]} -> {segment[5]}")
-                print(f"    Avgang: {segment[2]}, Ankomst: {segment[3]}")
     else:
-        print(f"\nIngen flyruter funnet mellom {start_flyplass} og {slutt_flyplass} på den valgte datoen.")
+        print(f"\nIngen flyruter funnet mellom {start_flyplass} og {slutt_flyplass} på den valgte datoen.")
 
     conn.close()
-
-    main()
 
 if __name__ == '__main__':
     main()

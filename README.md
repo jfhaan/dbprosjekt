@@ -24,6 +24,20 @@ python3 oppgave5.py
 python3 oppgave6.py
 ```
 
+## Oppgave 7
+
+For å sjekke det har blitt lagt til bestillinger kan man kjøre følgende i terminalen
+
+```sql
+sqlite3 fly.db
+```
+
+```sql
+SELECT *
+FROM Bestilling
+WHERE kundenumer = 1;
+```
+
 ### Oppgave 8
 
 ```python3

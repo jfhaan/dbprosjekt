@@ -117,7 +117,7 @@ CREATE TABLE Billett (
     Kategori VARCHAR(10) CHECK (Kategori IN ('budsjett', 'økonomi', 'premium')),
     Pris DECIMAL(10, 2) NOT NULL,
     Innsjekkingstid TIMESTAMP NOT NULL,
-    Sete VARCHAR(10) NOT NULL,
+    Sete VARCHAR(10),
     Flyvning INTEGER NOT NULL,
     FOREIGN KEY (Flyvning) REFERENCES Flyvning (Loepenummer),
     FOREIGN KEY (Referansenummer) REFERENCES Bestilling (Referansenummer)
